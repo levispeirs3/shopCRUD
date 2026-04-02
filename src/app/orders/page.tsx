@@ -10,7 +10,7 @@ type PageProps = {
 
 export default async function OrdersPage({ searchParams }: PageProps) {
   const customerId = await requireSelectedCustomerId();
-  const orders = getOrdersForCustomer(customerId);
+  const orders = await getOrdersForCustomer(customerId);
   const params = await searchParams;
 
   return (

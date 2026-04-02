@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Shop CRUD",
-  description: "Student CRUD project with Next.js and SQLite",
+  description: "Student CRUD project with Next.js and Supabase Postgres",
 };
 
 export default function RootLayout({

@@ -1,22 +1,19 @@
-# Shop CRUD (Next.js + SQLite)
+# Shop CRUD (Next.js + Supabase Postgres)
 
-Student project web CRUD app built with Next.js App Router and SQLite (`better-sqlite3`).
+Student project web CRUD app built with Next.js App Router, backed by Supabase Postgres.
 
 ## Requirements
 
 - Node.js 20+
-- A SQLite database file named `shop.db`
+- A Supabase Postgres connection string in `SUPABASE_DB_URL`
 
-## Database location
+## Supabase configuration
 
-The app checks database paths in this order:
+Set the connection string in `.env.local` (locally) or your hosting environment variable (Vercel):
 
-1. `SHOP_DB_PATH` environment variable (if set)
-2. `./shop.db`
-3. `./data/shop.db`
-4. `./Data/shop.db`
-
-If your DB is in a different location, set `SHOP_DB_PATH`.
+```bash
+SUPABASE_DB_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres
+```
 
 ## Install and run
 
@@ -42,5 +39,5 @@ Open `http://localhost:3000`.
 - `/orders` - order history for selected customer
 - `/orders/[order_id]` - order detail and line items
 - `/warehouse/priority` - late delivery queue
-- `/run-scoring` - placeholder scoring page
+- `/run-scoring` - ML fraud scoring page
 - `/debug/schema` - developer schema inspector

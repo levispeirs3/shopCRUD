@@ -2,8 +2,8 @@ import { getWarehousePriorityQueue } from "@/lib/shop";
 
 export const dynamic = "force-dynamic";
 
-export default function WarehousePriorityPage() {
-  const rows = getWarehousePriorityQueue();
+export default async function WarehousePriorityPage() {
+  const rows = await getWarehousePriorityQueue();
 
   return (
     <section className="space-y-4">

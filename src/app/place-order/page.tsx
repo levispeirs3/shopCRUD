@@ -33,7 +33,7 @@ async function placeOrderAction(formData: FormData) {
     redirect("/place-order?error=1");
   }
 
-  createOrder(customerId, items);
+  await createOrder(customerId, items);
   redirect("/orders?success=1");
 }
 
@@ -43,7 +43,7 @@ type PageProps = {
 
 export default async function PlaceOrderPage({ searchParams }: PageProps) {
   await requireSelectedCustomerId();
-  const products = getProducts();
+  const products = await getProducts();
   const params = await searchParams;
 
   return (

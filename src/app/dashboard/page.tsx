@@ -6,12 +6,12 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const customerId = await requireSelectedCustomerId();
-  const customer = getCustomerById(customerId);
+  const customer = await getCustomerById(customerId);
   if (!customer) {
     redirect("/select-customer");
   }
 
-  const summary = getCustomerOrderSummary(customerId);
+  const summary = await getCustomerOrderSummary(customerId);
 
   return (
     <section className="space-y-4">

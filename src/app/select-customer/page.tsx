@@ -30,7 +30,7 @@ async function selectCustomerAction(formData: FormData) {
 export default async function SelectCustomerPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const q = params.q ?? "";
-  const customers = getCustomers(q);
+  const customers = await getCustomers(q);
 
   return (
     <section className="space-y-4">
