@@ -69,6 +69,9 @@ export default function RootLayout({
             <Link href="/run-scoring" className="rounded-md bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-800 hover:bg-blue-100">
               Run Scoring
             </Link>
+            <Link href="/supabase-test" className="rounded-md bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-800 hover:bg-blue-100">
+              Supabase Test
+            </Link>
           </div>
           <div className="mx-auto w-full max-w-6xl border-t border-slate-200 px-4 py-2">
             <CustomerBanner />

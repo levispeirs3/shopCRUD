@@ -1,19 +1,11 @@
-# Shop CRUD (Next.js + Supabase Postgres)
+# Shop CRUD (Next.js + Supabase)
 
-Student project web CRUD app built with Next.js App Router, backed by Supabase Postgres.
+Student project web CRUD app built with Next.js App Router and Supabase (Postgres).
 
 ## Requirements
 
 - Node.js 20+
-- A Supabase Postgres connection string in `SUPABASE_DB_URL`
-
-## Supabase configuration
-
-Set the connection string in `.env.local` (locally) or your hosting environment variable (Vercel):
-
-```bash
-SUPABASE_DB_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres
-```
+- A Supabase project with migrated tables/data
 
 ## Install and run
 
@@ -21,6 +13,16 @@ SUPABASE_DB_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:54
 npm install
 npm run dev
 ```
+
+Add Supabase variables to `.env.local` (and to Vercel project env vars):
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your-publishable-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` is recommended for server-side mutations on Vercel.
 
 Open `http://localhost:3000`.
 
@@ -39,5 +41,6 @@ Open `http://localhost:3000`.
 - `/orders` - order history for selected customer
 - `/orders/[order_id]` - order detail and line items
 - `/warehouse/priority` - late delivery queue
-- `/run-scoring` - ML fraud scoring page
-- `/debug/schema` - developer schema inspector
+- `/run-scoring` - run Supabase-native fraud scoring and mark actual fraud outcomes
+- `/supabase-test` - basic Supabase query test against `customers`
+- `/debug/schema` - Supabase table connectivity diagnostics
