@@ -4,7 +4,7 @@ import fs from "node:fs";
 
 let dbInstance: Database.Database | null = null;
 
-function resolveDbPath() {
+export function resolveDbPath() {
   const fromEnv = process.env.SHOP_DB_PATH;
   if (fromEnv && fs.existsSync(fromEnv)) {
     return fromEnv;

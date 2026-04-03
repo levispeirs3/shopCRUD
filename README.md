@@ -5,6 +5,7 @@ Student project web CRUD app built with Next.js App Router and SQLite (`better-s
 ## Requirements
 
 - Node.js 20+
+- Python 3.10+ (for fraud scoring pipeline)
 - A SQLite database file named `shop.db`
 
 ## Database location
@@ -22,6 +23,7 @@ If your DB is in a different location, set `SHOP_DB_PATH`.
 
 ```bash
 npm install
+python -m pip install -r ml/requirements.txt
 npm run dev
 ```
 
@@ -42,5 +44,5 @@ Open `http://localhost:3000`.
 - `/orders` - order history for selected customer
 - `/orders/[order_id]` - order detail and line items
 - `/warehouse/priority` - late delivery queue
-- `/run-scoring` - placeholder scoring page
+- `/run-scoring` - run notebook-converted fraud predictions and mark actual fraud outcomes
 - `/debug/schema` - developer schema inspector
