@@ -20,11 +20,10 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     return Response.json({ error: "Expected isFraud boolean in request body." }, { status: 400 });
   }
 
-  const updated = setOrderActualFraud(orderId, body.isFraud);
+  const updated = await setOrderActualFraud(orderId, body.isFraud);
   if (!updated) {
     return Response.json({ error: "Order not found." }, { status: 404 });
   }
 
   return Response.json({ orderId, isFraud: body.isFraud });
 }
-

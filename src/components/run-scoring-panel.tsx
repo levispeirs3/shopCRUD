@@ -194,7 +194,7 @@ export default function RunScoringPanel() {
           </span>
         </div>
         <p className="mt-3 text-sm text-gray-700">
-          Run the notebook-converted pipeline to score fraud probability for transactions. After scoring, use the
+          Run the Supabase scoring job to score fraud probability for transactions. After scoring, use the
           switch in the table to mark whether each transaction was actually fraud.
         </p>
         {runMessage ? (
@@ -297,4 +297,3 @@ export default function RunScoringPanel() {
     </div>
   );
 }
-

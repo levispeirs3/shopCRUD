@@ -1,38 +1,28 @@
-# Shop CRUD (Next.js + SQLite)
+# Shop CRUD (Next.js + Supabase)
 
-Student project web CRUD app built with Next.js App Router and SQLite (`better-sqlite3`).
+Student project web CRUD app built with Next.js App Router and Supabase (Postgres).
 
 ## Requirements
 
 - Node.js 20+
-- Python 3.10+ (for fraud scoring pipeline)
-- A SQLite database file named `shop.db`
-
-## Database location
-
-The app checks database paths in this order:
-
-1. `SHOP_DB_PATH` environment variable (if set)
-2. `./shop.db`
-3. `./data/shop.db`
-4. `./Data/shop.db`
-
-If your DB is in a different location, set `SHOP_DB_PATH`.
+- A Supabase project with migrated tables/data
 
 ## Install and run
 
 ```bash
 npm install
-python -m pip install -r ml/requirements.txt
 npm run dev
 ```
 
-For Supabase client usage in this Next.js app, add to `.env.local`:
+Add Supabase variables to `.env.local` (and to Vercel project env vars):
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your-project-url
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your-publishable-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
+
+`SUPABASE_SERVICE_ROLE_KEY` is recommended for server-side mutations on Vercel.
 
 Open `http://localhost:3000`.
 
@@ -51,6 +41,6 @@ Open `http://localhost:3000`.
 - `/orders` - order history for selected customer
 - `/orders/[order_id]` - order detail and line items
 - `/warehouse/priority` - late delivery queue
-- `/run-scoring` - run notebook-converted fraud predictions and mark actual fraud outcomes
+- `/run-scoring` - run Supabase-native fraud scoring and mark actual fraud outcomes
 - `/supabase-test` - basic Supabase query test against `customers`
-- `/debug/schema` - developer schema inspector
+- `/debug/schema` - Supabase table connectivity diagnostics

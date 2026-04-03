@@ -18,12 +18,12 @@ export default async function OrderDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  const order = getOrderForCustomer(orderId, customerId);
+  const order = await getOrderForCustomer(orderId, customerId);
   if (!order) {
     notFound();
   }
 
-  const items = getOrderItems(orderId);
+  const items = await getOrderItems(orderId);
 
   return (
     <section className="space-y-4">

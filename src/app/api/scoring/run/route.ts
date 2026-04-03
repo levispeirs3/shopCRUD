@@ -1,15 +1,13 @@
-import { resolveDbPath } from "@/lib/db";
-import { runFraudScoringPipeline } from "@/lib/fraud-pipeline";
-import { getFraudPredictionSummary, getFraudPredictions } from "@/lib/shop";
+import { getFraudPredictionSummary, getFraudPredictions, runFraudScoringJob } from "@/lib/shop";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST() {
   try {
-    const pipelineResult = runFraudScoringPipeline(resolveDbPath());
-    const summary = getFraudPredictionSummary();
-    const rows = getFraudPredictions();
+    const pipelineResult = await runFraudScoringJob();
+    const summary = await getFraudPredictionSummary();
+    const rows = await getFraudPredictions();
 
     return Response.json({
       pipelineResult,
@@ -21,4 +19,3 @@ export async function POST() {
     return Response.json({ error: message }, { status: 500 });
   }
 }
-

@@ -4,8 +4,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const summary = getFraudPredictionSummary();
-  const rows = getFraudPredictions();
+  const summary = await getFraudPredictionSummary();
+  const rows = await getFraudPredictions();
   return Response.json({ summary, rows });
 }
-

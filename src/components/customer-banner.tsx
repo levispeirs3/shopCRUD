@@ -11,7 +11,7 @@ export default async function CustomerBanner() {
     );
   }
 
-  const customer = getCustomerById(customerId);
+  const customer = await getCustomerById(customerId);
   if (!customer) {
     return (
       <div className="text-sm text-red-700">
