@@ -27,6 +27,13 @@ python -m pip install -r ml/requirements.txt
 npm run dev
 ```
 
+For Supabase client usage in this Next.js app, add to `.env.local`:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=your-publishable-key
+```
+
 Open `http://localhost:3000`.
 
 ## Available scripts
@@ -45,4 +52,5 @@ Open `http://localhost:3000`.
 - `/orders/[order_id]` - order detail and line items
 - `/warehouse/priority` - late delivery queue
 - `/run-scoring` - run notebook-converted fraud predictions and mark actual fraud outcomes
+- `/supabase-test` - basic Supabase query test against `customers`
 - `/debug/schema` - developer schema inspector
