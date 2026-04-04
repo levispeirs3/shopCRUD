@@ -198,7 +198,6 @@ export async function getCustomerOrderSummary(customerId: number) {
     } satisfies OrderRow;
   });
 
-  const totals = totalsRows[0];
   return {
     orderCount,
     totalSpend,
