@@ -1,19 +1,26 @@
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+function getSupabaseUrl() {
+  return process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+}
 
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error(
-    "Missing Supabase server environment variables. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY for read-only fallback).",
+function getServerKey() {
+  return (
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()
   );
 }
 
 export function getSupabaseServerClient() {
+  const supabaseUrl = getSupabaseUrl();
+  const serviceRoleKey = getServerKey();
+
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Supabase server client is not configured.");
+    throw new Error(
+      "Missing Supabase server environment variables. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY. For read-only fallback, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY may also be used.",
+    );
   }
 
   return createClient(supabaseUrl, serviceRoleKey, {
