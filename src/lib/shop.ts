@@ -1,4 +1,5 @@
 import { FRAUD_MODEL_THRESHOLD } from "@/lib/fraud-config";
+import { scoreOrdersWithPython } from "@/lib/fraud-python";
 import { getSupabaseServerClient } from "@/lib/supabase-server";
 
 export type Customer = {
@@ -60,49 +61,6 @@ function decisionBand(probability: number): "low" | "review" | "block" {
   return "low";
 }
 
-function scoreOrder(order: {
-  risk_score: number | null;
-  order_total: number | null;
-  order_subtotal: number | null;
-  shipping_fee: number | null;
-  payment_method: string | null;
-  device_type: string | null;
-  ip_country: string | null;
-  promo_used: number | null;
-}) {
-  const base = Number(order.risk_score ?? 0);
-  const orderTotal = Number(order.order_total ?? 0);
-  const orderSubtotal = Number(order.order_subtotal ?? 0);
-  const shippingFee = Number(order.shipping_fee ?? 0);
-  const shippingRatio = orderSubtotal > 0 ? shippingFee / orderSubtotal : 0;
-
-  let score = clamp01(base) * 0.5;
-
-  if (orderTotal > 400) {
-    score += 0.2;
-  }
-  if (orderTotal > 800) {
-    score += 0.15;
-  }
-  if ((order.ip_country ?? "US") !== "US") {
-    score += 0.2;
-  }
-  if ((order.device_type ?? "").toLowerCase() === "mobile") {
-    score += 0.05;
-  }
-  if (Number(order.promo_used ?? 0) === 1) {
-    score += 0.05;
-  }
-  if (shippingRatio > 0.25) {
-    score += 0.1;
-  }
-  if (order.payment_method && order.payment_method !== "card") {
-    score += 0.1;
-  }
-
-  return clamp01(score);
-}
-
 function toShipmentArray(value: unknown) {
   if (!value) {
     return [];
@@ -122,6 +80,77 @@ function toCustomerName(value: unknown) {
   }
   return String((value as { full_name?: string }).full_name ?? "Unknown");
 }
+
+async function fetchAllRows<T>(
+  fetchPage: (from: number, to: number) => Promise<{ data: T[] | null; error: { message: string } | null }>,
+) {
+  const pageSize = 1000;
+  const rows: T[] = [];
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await fetchPage(from, from + pageSize - 1);
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const page = data ?? [];
+    rows.push(...page);
+
+    if (page.length < pageSize) {
+      break;
+    }
+  }
+
+  return rows;
+}
+
+type FraudScoringOrderSourceRow = {
+  order_id: number;
+  customer_id: number;
+  order_datetime: string | null;
+  billing_zip: string | null;
+  shipping_zip: string | null;
+  shipping_state: string | null;
+  payment_method: string | null;
+  device_type: string | null;
+  ip_country: string | null;
+  promo_used: number | null;
+  order_subtotal: number | null;
+  shipping_fee: number | null;
+  tax_amount: number | null;
+  order_total: number | null;
+  risk_score: number | null;
+};
+
+type FraudScoringCustomerRow = {
+  customer_id: number;
+  gender?: string | null;
+  birthdate?: string | null;
+  created_at?: string | null;
+  city?: string | null;
+  state?: string | null;
+  customer_segment?: string | null;
+  loyalty_tier?: string | null;
+  is_active?: number | null;
+};
+
+type FraudScoringShipmentRow = {
+  order_id: number;
+  carrier?: string | null;
+  shipping_method?: string | null;
+  distance_band?: string | null;
+  promised_days?: number | null;
+  actual_days?: number | null;
+  late_delivery?: number | null;
+};
+
+type FraudScoringItemRow = {
+  order_id: number;
+  quantity: number | null;
+  line_total: number | null;
+  unit_price: number | null;
+  product_id: number | null;
+};
 
 export async function getCustomers(search: string) {
   const supabase = getSupabaseServerClient();
@@ -438,48 +467,73 @@ export async function getWarehousePriorityQueue() {
 
 export async function runFraudScoringJob(): Promise<FraudPipelineRunResult> {
   const supabase = getSupabaseServerClient();
-  const { data, error } = await supabase
-    .from("orders")
-    .select(
-      "order_id, risk_score, order_total, order_subtotal, shipping_fee, payment_method, device_type, ip_country, promo_used",
-    );
+  const [orders, customers, shipments, orderItems] = await Promise.all([
+    fetchAllRows<FraudScoringOrderSourceRow>(async (from, to) =>
+      await supabase
+        .from("orders")
+        .select(
+          "order_id, customer_id, order_datetime, billing_zip, shipping_zip, shipping_state, payment_method, device_type, ip_country, promo_used, order_subtotal, shipping_fee, tax_amount, order_total, risk_score",
+        )
+        .order("order_id", { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRows<FraudScoringCustomerRow>(async (from, to) =>
+      await supabase
+        .from("customers")
+        .select("customer_id, gender, birthdate, created_at, city, state, customer_segment, loyalty_tier, is_active")
+        .order("customer_id", { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRows<FraudScoringShipmentRow>(async (from, to) =>
+      await supabase
+        .from("shipments")
+        .select("order_id, carrier, shipping_method, distance_band, promised_days, actual_days, late_delivery")
+        .order("shipment_id", { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllRows<FraudScoringItemRow>(async (from, to) =>
+      await supabase
+        .from("order_items")
+        .select("order_id, quantity, line_total, unit_price, product_id")
+        .order("order_item_id", { ascending: true })
+        .range(from, to),
+    ),
+  ]);
 
-  if (error) {
-    throw new Error(`Failed to fetch orders for fraud scoring: ${error.message}`);
-  }
-
-  const orders = data ?? [];
   const scoredAt = new Date().toISOString();
-  const scoredRows = orders.map((order) => {
-    const fraudProbability = scoreOrder({
-      risk_score: Number(order.risk_score ?? 0),
-      order_total: Number(order.order_total ?? 0),
-      order_subtotal: Number(order.order_subtotal ?? 0),
-      shipping_fee: Number(order.shipping_fee ?? 0),
-      payment_method: order.payment_method as string | null,
-      device_type: order.device_type as string | null,
-      ip_country: order.ip_country as string | null,
-      promo_used: Number(order.promo_used ?? 0),
-    });
+  const customerById = new Map(customers.map((customer) => [Number(customer.customer_id), customer]));
+  const shipmentByOrderId = new Map(shipments.map((shipment) => [Number(shipment.order_id), shipment]));
+  const ordersForPython = orders.map((order) => ({
+    ...order,
+    customers: customerById.get(Number(order.customer_id)) ?? null,
+    shipments: shipmentByOrderId.get(Number(order.order_id)) ?? null,
+  }));
 
-    return {
-      order_id: Number(order.order_id),
-      risk_score: fraudProbability,
-      decision_band: decisionBand(fraudProbability),
-    };
+  const pythonResult = scoreOrdersWithPython({
+    orders: ordersForPython,
+    order_items: orderItems,
   });
+  const scoredRows = pythonResult.predictions.map((prediction) => ({
+    order_id: prediction.order_id,
+    risk_score: prediction.risk_score,
+    decision_band: prediction.decision_band,
+  }));
 
   const chunkSize = 500;
   for (let index = 0; index < scoredRows.length; index += chunkSize) {
-    const chunk = scoredRows
-      .slice(index, index + chunkSize)
-      .map((row) => ({ order_id: row.order_id, risk_score: row.risk_score }));
-    const { error: upsertError } = await supabase
-      .from("orders")
-      .upsert(chunk, { onConflict: "order_id" });
+    const chunk = scoredRows.slice(index, index + chunkSize);
+    const results = await Promise.all(
+      chunk.map((row) =>
+        supabase
+          .from("orders")
+          .update({ risk_score: row.risk_score })
+          .eq("order_id", row.order_id),
+      ),
+    );
 
-    if (upsertError) {
-      throw new Error(`Failed to update fraud scores: ${upsertError.message}`);
+    const failedUpdate = results.find((result) => result.error);
+    if (failedUpdate?.error) {
+      throw new Error(`Failed to update fraud scores: ${failedUpdate.error.message}`);
     }
   }
 
@@ -492,8 +546,8 @@ export async function runFraudScoringJob(): Promise<FraudPipelineRunResult> {
     blockedCount,
     reviewCount,
     lowCount,
-    threshold: FRAUD_MODEL_THRESHOLD,
-    modelName: "supabase-risk-heuristic-v1",
+    threshold: pythonResult.threshold,
+    modelName: pythonResult.model_name,
     scoredAt,
     holdoutPrecision: null,
     holdoutRecall: null,
@@ -533,12 +587,10 @@ export async function getFraudPredictions(limit = 250) {
 
 export async function getFraudPredictionSummary() {
   const supabase = getSupabaseServerClient();
-  const { data, error } = await supabase.from("orders").select("risk_score");
-  if (error) {
-    throw new Error(`Failed to fetch fraud summary: ${error.message}`);
-  }
-
-  const scores = (data ?? []).map((row) => clamp01(Number(row.risk_score ?? 0)));
+  const rows = await fetchAllRows<{ risk_score: number | null }>(async (from, to) =>
+    await supabase.from("orders").select("risk_score").order("order_id", { ascending: true }).range(from, to),
+  );
+  const scores = rows.map((row) => clamp01(Number(row.risk_score ?? 0)));
   const scoredCount = scores.length;
   const blockCount = scores.filter((score) => decisionBand(score) === "block").length;
   const reviewCount = scores.filter((score) => decisionBand(score) === "review").length;

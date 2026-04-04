@@ -12,14 +12,6 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    // Local migration utilities and generated batch helpers are outside the app runtime.
-    "migrate-tmp/**",
-    "concat-sql.cjs",
-    "export-sqlite.cjs",
-    "gen-inserts.cjs",
-    "migrate-remaining.cjs",
-    "migrate-to-supabase.mjs",
-    "mcp-args-export.mjs",
   ]),
 ]);
 
