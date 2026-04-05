@@ -23,26 +23,7 @@ type PredictionSummary = {
   threshold: number;
 } | null;
 
-type PipelineResult = {
-  updatedCount: number;
-  blockedCount: number;
-  reviewCount: number;
-  lowCount: number;
-  threshold: number;
-  modelName: string;
-  scoredAt: string;
-  holdoutPrecision: number | null;
-  holdoutRecall: number | null;
-};
-
 type PredictionResponse = {
-  summary: PredictionSummary;
-  rows: PredictionRow[];
-  error?: string;
-};
-
-type RunResponse = {
-  pipelineResult: PipelineResult;
   summary: PredictionSummary;
   rows: PredictionRow[];
   error?: string;
@@ -70,10 +51,8 @@ export default function RunScoringPanel() {
   const [rows, setRows] = useState<PredictionRow[]>([]);
   const [summary, setSummary] = useState<PredictionSummary>(null);
   const [loading, setLoading] = useState(true);
-  const [running, setRunning] = useState(false);
   const [updatingOrderIds, setUpdatingOrderIds] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
-  const [runMessage, setRunMessage] = useState<string | null>(null);
 
   const loadPredictions = useCallback(async () => {
     const response = await fetch("/api/scoring/predictions", {
@@ -119,32 +98,6 @@ export default function RunScoringPanel() {
     return summary.threshold.toFixed(3);
   }, [summary]);
 
-  async function runPipeline() {
-    setRunning(true);
-    setError(null);
-    setRunMessage(null);
-    try {
-      const response = await fetch("/api/scoring/run", {
-        method: "POST",
-      });
-      const data = (await response.json()) as RunResponse;
-      if (!response.ok) {
-        throw new Error(data.error || "Pipeline run failed.");
-      }
-
-      setSummary(data.summary);
-      setRows(data.rows);
-      setRunMessage(
-        `Predictions refreshed for ${data.pipelineResult.updatedCount} transactions using ${data.pipelineResult.modelName}.`,
-      );
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Pipeline run failed.";
-      setError(message);
-    } finally {
-      setRunning(false);
-    }
-  }
-
   async function updateActualFraud(orderId: number, nextValue: boolean) {
     setUpdatingOrderIds((prev) => new Set(prev).add(orderId));
     setError(null);
@@ -181,25 +134,14 @@ export default function RunScoringPanel() {
     <div className="space-y-4">
       <div className="rounded border bg-white p-4">
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={runPipeline}
-            disabled={running}
-            className="rounded bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-gray-400"
-          >
-            {running ? "Running..." : "Run Prediction"}
-          </button>
           <span className="text-sm text-gray-700">
             Threshold: <span className="font-semibold">{thresholdLabel}</span>
           </span>
         </div>
         <p className="mt-3 text-sm text-gray-700">
-          Run the Supabase scoring job to score fraud probability for transactions. After scoring, use the
-          switch in the table to mark whether each transaction was actually fraud.
+          Review the current fraud probability predictions for transactions. Use the switch in the table to
+          mark whether each transaction was actually fraud.
         </p>
-        {runMessage ? (
-          <p className="mt-3 rounded border border-green-200 bg-green-50 p-2 text-sm text-green-700">{runMessage}</p>
-        ) : null}
         {error ? <p className="mt-3 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">{error}</p> : null}
       </div>
 
@@ -280,7 +222,7 @@ export default function RunScoringPanel() {
             {!loading && rows.length === 0 ? (
               <tr>
                 <td className="p-3 text-gray-500" colSpan={8}>
-                  No scored transactions yet. Click <strong>Run Prediction</strong> to generate fraud predictions.
+                  No scored transactions are available.
                 </td>
               </tr>
             ) : null}
